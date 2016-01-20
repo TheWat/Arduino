@@ -2,6 +2,12 @@
 #include <EEPROM.h>
 #include <SPI.h>
 #include "APmode.h"
+/****
+ * Vreal = (2Vin-3.3/2)*(.512/3.3)*1001
+ * 
+ * Ireal = (Vcurrent-3.3/2)*(.512/3.3)*10
+ * 
+ */
 
 
 
@@ -130,7 +136,9 @@ void loop() {
     }
     voltageSum += (float(switchBytes(readval))/4096.0)*3.3/2.0;
     */
-    float power = (voltageMultiplier*internalV+voltageOffset)*(currentMultiplier*spiV+currentOffset);
+    float realVoltage = (2*internalV-3.3/2)*(.512/3.3)*1001;
+    float realCurrent = (spiV-3.3/2)*10*(.512/3.3);
+    float power = realVoltage*realCurrent;
     powerSum += power;
     count++;
     if(count == maxCount){

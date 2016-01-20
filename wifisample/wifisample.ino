@@ -10,7 +10,7 @@ const char* password = "7324217398";
 const char* host = "wat.jabez.org";
  
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   delay(100);
  
   // We start by connecting to a WiFi network

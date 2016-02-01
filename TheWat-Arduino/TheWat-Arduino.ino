@@ -19,6 +19,7 @@
 bool isconnected;
 
 const int chipSelectPin = 5;
+const int chipSelectPin2 = 16;
 
 const int spi_clk = 100000;
 
@@ -118,25 +119,19 @@ double opampInputVoltage(double in, double vref){
   return .512*(in/vref-.5);
 }
 
-int value = 0;
 int maxCount = 3000;
 int count = 0;
-double voltageSum = 0;
-double currentSum = 0;
-double powerSum = 0;
+
 double currentVREF = 3.3;
-double voltageVREF = 1.1;
+double voltageVREF = 3.3;
 float CRMSsum = 0;
 float VRMSsum = 0;
+double powerSum = 0;
 int accuracy = 3;
-unsigned long lastTime = millis();
-float lastCreading = 0;
-int cCrossings = 0;
+
 
 
 void loop() {
-  ++value;
-  
 
   if(isconnected){
     yield();
@@ -145,83 +140,48 @@ void loop() {
     digitalWrite(chipSelectPin, LOW);
     uint16_t readval = SPI.transfer16(0x0000);    
     digitalWrite(chipSelectPin, HIGH);
+
+    /*digitalWrite(chipSelectPin2, LOW);
+    uint16_t readval2 = switchBytes(SPI.transfer16(0x0000));
+    float volV = opampInputVoltage(float(readval2)/4096.0*(3.3/2.0),voltageVREF);
+    digitalWrite(chipSelectPin2, HIGH);*/
+    float volV = 0;
     
     float spiV = (float(switchBytes(readval))/4096.0)*3.3/2.0;
 
-    
-
-    //float internalV = float(analogRead(A0))/1024.0;
-
     float curV = opampInputVoltage(spiV,currentVREF);
-    //float volV = opampInputVoltage(internalV,voltageVREF);
 
     if(count==maxCount){
-      
-      //Serial.println(readval,HEX);
-      Serial.println(switchBytes(readval),HEX); 
-      
-      //Serial.print("SPI sum: ");
-      //Serial.println(currentSum/double(maxCount),accuracy);
-      Serial.print("Instant SPI Opamp: ");
-      Serial.println(opampInputVoltage(spiV,currentVREF),accuracy);
-      Serial.print("Opamp SPI drop: ");
-      Serial.println(opampInputVoltage(currentSum/double(maxCount),currentVREF),accuracy);
-      /*
-      Serial.print("Internal Sum:");
-      Serial.println(voltageSum/double(maxCount),accuracy);
-    1  Serial.print("Instant Internal OpAmp: ");
-      Serial.println(opampInputVoltage(internalV,voltageVREF),accuracy);
-      
-      
-      Serial.print("OpAmp Internal Drop: ");
-      Serial.println(opampInputVoltage(voltageSum/double(maxCount),voltageVREF),accuracy);
-      */
-      //Serial.println(CRMSsum);
-      /*Serial.print("the actual voltage: ");
-      Serial.println(spiV,accuracy);
-      Serial.println(internalV,accuracy);
-      Serial.print("SPI: ");
-      Serial.println(curV,accuracy);
-      Serial.println(volV,accuracy);*/
-      
+            
       Serial.print("Current RMS: ");
       float intermediate = sqrt(CRMSsum/float(maxCount));
       Serial.print(5*intermediate,accuracy);
       Serial.println(" Amps");
+      Serial.println(switchBytes(readval));
       
-      /*
+      
       Serial.print("Voltage RMS: ");
       intermediate = sqrt(VRMSsum/float(maxCount));
-      Serial.println(1001*intermediate,accuracy);
-      
+      Serial.print(1001*intermediate,accuracy);
+      Serial.println(" Volts");
 
+      //Serial.println(readval2);
 
-      Serial.print("Time Elapsed: ");
-      unsigned long tempTime = millis();
-      Serial.print(tempTime-lastTime);
-      Serial.println("ms");
-      Serial.print(cCrossings);
-      lastTime = tempTime;
-      //Serial.print("Instant Voltage");
-      //Serial.println((float(switchBytes(readval))/4096.0)*3.3/2.0);
-      */
+      Serial.print("Power: ");
+      Serial.print(powerSum/float(maxCount));
+      Serial.println(" Watts");
+
       
-      voltageSum = 0;
-      currentSum = 0;
       CRMSsum = 0;
       VRMSsum = 0;
+      powerSum = 0;
       count = 0;
-      cCrossings = 0;
     }
-    currentSum += spiV;
-    //voltageSum += internalV;
     
     
     CRMSsum += curV*curV;
-   // VRMSsum += volV*volV;
-    if((lastCreading < 0 && curV > 0) || (lastCreading > 0 && curV < 0))
-      cCrossings++;
-    lastCreading = curV;
+    VRMSsum += volV*volV;
+    powerSum += curV*volV;
     count++;
     
    

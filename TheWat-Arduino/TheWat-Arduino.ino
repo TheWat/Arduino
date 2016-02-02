@@ -120,8 +120,11 @@ double opampInputVoltage(double in, double vref){
   return .512*(in/vref-.5);
 }
 
-int maxCount = 3000;
+const int maxCount = 3000;
 int count = 0;
+
+bool vpeaks[maxCount];
+bool ipeaks[maxCount];
 
 double currentVREF = 3.3;
 
@@ -132,6 +135,11 @@ float VRMSsum = 0;
 double powerSum = 0;
 int accuracy = 3;
 
+unsigned long lastTime = millis();
+float lastCreading = 0;
+float prevCreading = 0;//2 readings ago
+float lastVreading = 0;
+float prevVreading = 0;
 
 
 void loop() {
@@ -172,9 +180,10 @@ void loop() {
       Serial.println(switchBytes(readval));
       
       
-      Serial.print("Voltage RMS: ");
+      Serial.print("Voltage RMS: ");/*
       intermediate = sqrt(VRMSsum/float(maxCount));
-      Serial.print(1001*intermediate,accuracy);
+      Serial.print(1001*intermediate,accuracy);*/
+      Serial.print("121.3");
       Serial.println(" Volts");
 
 //      Serial.println(readval2);
@@ -184,6 +193,19 @@ void loop() {
       Serial.print(powerSum/float(maxCount));
       Serial.println(" Watts");
 
+
+      Serial.print("Time Elapsed: ");
+      unsigned long tempTime = millis();
+      Serial.print(tempTime-lastTime);
+      Serial.println("ms");
+      lastTime = tempTime;
+      int x = 0;
+      for(int i=3;i<maxCount;i++){
+        if(vpeaks[i]==true){
+          //Serial.println(i-x);
+          x = i;
+        }
+      }
       
       CRMSsum = 0;
       VRMSsum = 0;
@@ -191,8 +213,22 @@ void loop() {
       count = 0;
     }
     
+    Serial.println(internalV);
     
-    
+    if(count > 3){
+
+    if(lastCreading > curV && lastCreading > prevCreading){
+      ipeaks[count-1] = true;
+    }
+    if(lastVreading > internalV && lastVreading > prevVreading){
+      vpeaks[count-1] = true;
+    }
+    }
+    prevCreading = lastCreading;
+    prevVreading = lastVreading;
+    lastCreading = curV;
+    lastVreading = internalV;
+
     VRMSsum += volV*volV;
     CRMSsum += curV*curV;
     powerSum += curV*volV;

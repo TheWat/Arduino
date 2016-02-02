@@ -41,16 +41,21 @@ void setup() {
  
   // We start by connecting to a WiFi network
   #ifdef NOWIFI
+  Serial.println("");
+  delay(1000);
   
   isconnected = true;
   pinMode(2,OUTPUT);
+  Serial.print("ESP is powering up.");
   for(int i=0; i < 4; i++){
     digitalWrite(2, HIGH);
+    Serial.print(".");
     delay(1000);
     digitalWrite(2, LOW);
+    Serial.print(".");
     delay(1000);
   }
-  Serial.println("Your ESP is Starting!");
+  Serial.println("Started!");
   delay(500);
   
   
@@ -159,7 +164,6 @@ void loop() {
     float volV = opampInputVoltage(internalV*2.99,voltageVREF);
     
     #endif
-    //float volV = 0;
     
 
 
@@ -169,19 +173,21 @@ void loop() {
       float intermediate = sqrt(CRMSsum/float(maxCount));
       Serial.print(5*intermediate,accuracy);
       Serial.println(" Amps");
-      Serial.println(switchBytes(readval));
+      //Serial.println(switchBytes(readval));
       
       
       Serial.print("Voltage RMS: ");
-      intermediate = sqrt(VRMSsum/float(maxCount));
-      Serial.print(1001*intermediate,accuracy);
+      float vrms = 1.15*1001*sqrt(VRMSsum/float(maxCount));
+      if(vrms<30)
+        vrms = .01;
+      Serial.print(vrms,accuracy);
       Serial.println(" Volts");
 
 //      Serial.println(readval2);
-      Serial.println(internalV);
-      Serial.println(volV);
+     // Serial.println(internalV);
+      //Serial.println(volV);
       Serial.print("Power: ");
-      Serial.print(powerSum/float(maxCount));
+      Serial.print(5*1001*powerSum/float(maxCount));
       Serial.println(" Watts");
 
       
@@ -195,7 +201,7 @@ void loop() {
     
     VRMSsum += volV*volV;
     CRMSsum += curV*curV;
-    powerSum += curV*volV;
+    powerSum += curV*volV*1.12;
     count++;
     
    

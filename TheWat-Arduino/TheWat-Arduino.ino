@@ -14,6 +14,7 @@
   * CS - Pin 5
   */
 #define NOWIFI
+#define INTERNALADC
 
 
 bool isconnected;
@@ -123,7 +124,9 @@ int maxCount = 3000;
 int count = 0;
 
 double currentVREF = 3.3;
+
 double voltageVREF = 3.3;
+
 float CRMSsum = 0;
 float VRMSsum = 0;
 double powerSum = 0;
@@ -141,15 +144,24 @@ void loop() {
     uint16_t readval = SPI.transfer16(0x0000);    
     digitalWrite(chipSelectPin, HIGH);
 
-    /*digitalWrite(chipSelectPin2, LOW);
-    uint16_t readval2 = switchBytes(SPI.transfer16(0x0000));
-    float volV = opampInputVoltage(float(readval2)/4096.0*(3.3/2.0),voltageVREF);
-    digitalWrite(chipSelectPin2, HIGH);*/
-    float volV = 0;
-    
     float spiV = (float(switchBytes(readval))/4096.0)*3.3/2.0;
 
     float curV = opampInputVoltage(spiV,currentVREF);
+
+    
+    #ifndef INTERNALADC
+    digitalWrite(chipSelectPin2, LOW);
+    uint16_t readval2 = switchBytes(SPI.transfer16(0x0000));
+    float volV = opampInputVoltage(float(readval2)/4096.0*(3.3/2.0),voltageVREF);
+    digitalWrite(chipSelectPin2, HIGH);
+    #else
+    float internalV = float(analogRead(A0))/1024.0;
+    float volV = opampInputVoltage(internalV*2.99,voltageVREF);
+    
+    #endif
+    //float volV = 0;
+    
+
 
     if(count==maxCount){
             
@@ -165,8 +177,9 @@ void loop() {
       Serial.print(1001*intermediate,accuracy);
       Serial.println(" Volts");
 
-      //Serial.println(readval2);
-
+//      Serial.println(readval2);
+      Serial.println(internalV);
+      Serial.println(volV);
       Serial.print("Power: ");
       Serial.print(powerSum/float(maxCount));
       Serial.println(" Watts");
@@ -179,8 +192,9 @@ void loop() {
     }
     
     
-    CRMSsum += curV*curV;
+    
     VRMSsum += volV*volV;
+    CRMSsum += curV*curV;
     powerSum += curV*volV;
     count++;
     
